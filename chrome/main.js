@@ -726,16 +726,19 @@ SGMain.prototype.doEngage = function(rounds, missiles, raid) {
     this.target();
 };
 
-SGMain.prototype.doWin = function( mode, rounds, missiles, raid ) {
+SGMain.prototype.doWin = function( mode, rounds, missiles, stopEngage, raid ) {
     var storage = this.storage,
         armour = storage.armour,
         points = ( mode == 'm' ) ? armour.max : armour.low,
         lkap = storage.lkap,
         lkba = storage.lkba;
 
-    if ( points > 0 && armour.level > 0 && lkba && lkap < points )
-        // Armour points and level are configured, we have bots available, and
-        // the last known armour points is below the threshold.  So use bots.
+    stopEngage = stopEngage == 't';
+
+    if ( points > 0 && armour.level > 0 && (lkba || stopEngage) && lkap < points )
+        // Armour points and level are configured, we have bots available or
+        // want to stop when they're gone, and the last known armour points is
+        // below the threshold.  So use bots.
         this.useBots( mode );
     else
         this.doEngage( rounds, missiles, raid );
@@ -747,8 +750,7 @@ SGMain.prototype.doWinB = function( botMode, attackMode, missiles ) {
     var storage = this.storage,
         armour = storage.armour,
         points = ( botMode == 'm' ) ? armour.max : armour.low,
-        lkap = storage.lkap,
-        lkba = storage.lkba;
+        lkap = storage.lkap;
 
     if ( points > 0 && armour.level > 0 && lkap < points )
         this.useBots( botMode );
@@ -887,16 +889,16 @@ SGMain.prototype.engage = function(rounds, missiles) {
     this.doEngage(rounds, missiles, false);
 };
 
-SGMain.prototype.win = function( minArmour, rounds, missiles ) {
-    this.doWin( minArmour, rounds, missiles, false );
+SGMain.prototype.win = function( minArmour, rounds, missiles, stopEngage ) {
+    this.doWin( minArmour, rounds, missiles, stopEngage, false );
 };
 
 SGMain.prototype.raid = function(rounds, missiles) {
     this.doEngage(rounds, missiles, true);
 };
 
-SGMain.prototype.winRaid = function( minArmour, rounds, missiles ) {
-    this.doWin( minArmour, rounds, missiles, true );
+SGMain.prototype.winRaid = function( minArmour, rounds, missiles, stopEngage ) {
+    this.doWin( minArmour, rounds, missiles, stopEngage, true );
 };
 
 SGMain.prototype.disengage = function() {

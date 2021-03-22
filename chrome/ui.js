@@ -19,6 +19,7 @@ SGPvPAction.prototype.displayName = function() { return this.name; };
 SGPvPAction.prototype.updateSetKeyPanelArgs = function() {
     var e = this.elements;
     e.skarg_bots.style.display = 'none';
+    e.skarg_stopengage.style.display = 'none';
     e.skarg_rounds.style.display = 'none';
     e.skarg_missiles.style.display = 'none';
     e.skarg_alwaysmax.style.display = 'none';
@@ -42,6 +43,7 @@ SGPvPActionM.prototype.displayName = function(missiles) {
 SGPvPActionM.prototype.updateSetKeyPanelArgs = function(missiles) {
     var e = this.elements;
     e.skarg_bots.style.display = 'none';
+    e.skarg_stopengage.style.display = 'none';
     e.skarg_rounds.style.display = 'none';
     e.skarg_alwaysmax.style.display = 'none';
     e.skarg_missiles.style.display = null; // default to block
@@ -69,12 +71,12 @@ SGPvPActionRM.prototype.updateSetKeyPanelArgs = function(rounds, missiles) {
     var e = this.elements;
     e.skarg_bots.style.display = 'none';
     e.skarg_alwaysmax.style.display = 'none';
+    e.skarg_stopengage.style.display = 'none';
     e.skarg_rounds.style.display = null; // default to block
     e.setkey_rounds.style.color = null; // default
     e.setkey_rounds.value = (rounds || 20);
     e.skarg_missiles.style.display = null; // default to block
     e.setkey_missiles.checked = (missiles != 'n');
-
 };
 SGPvPActionRM.prototype.getArgsFromUI = function() {
     var e = this.elements,
@@ -97,6 +99,7 @@ SGPvPActionB.prototype.displayName = function(bots) {
 // Call these two from SGPvPUI context
 SGPvPActionB.prototype.updateSetKeyPanelArgs = function(bots) {
     var e = this.elements;
+    e.skarg_stopengage.style.display = 'none';
     e.skarg_rounds.style.display = 'none';
     e.skarg_missiles.style.display = 'none';
     e.skarg_alwaysmax.style.display = 'none';
@@ -115,25 +118,30 @@ SGPvPActionB.prototype.getArgsFromUI = function() {
 // Actions with "armour threshold", "rounds", and "missiles" settings (win,
 // winRaid)
 function SGPvPActionWin() { }
-SGPvPActionWin.prototype.serialise = function( threshold, rounds, missiles ) {
-    return this.id + ',' +
-        (threshold == 'm' ? 'm' : 'l') + ',' +
-        (rounds || 20) + ',' +
-        (missiles != 'n' ? 'm' : 'n');
+SGPvPActionWin.prototype.serialise = function( threshold, rounds, missiles, stopEngage ) {
+    return [this.id,
+        (threshold == 'm' ? 'm' : 'l'),
+        (rounds || 20),
+        (missiles != 'n' ? 'm' : 'n'),
+        (stopEngage == 't' ? 't' : 'f')].join(',');
 };
-SGPvPActionWin.prototype.displayName = function(threshold, rounds, missiles) {
+SGPvPActionWin.prototype.displayName = function(threshold, rounds, missiles, stopEngage) {
     if(!rounds)
         rounds = 20;
-    return this.name + (rounds == 20 ? '' : ' '+rounds) +
-        (missiles != 'n' ? '' : ' no mis') +
-        (threshold == 'm' ? ' max arm' : '')
+    return this.name.replace('Repair', 'Rep' + (threshold == 'm' ? ' to max' : ''))
+        .replace('engage', 'atk') +
+        (stopEngage == 't' ? ' or stop' : '') +
+        (rounds == 20 ? '' : ' ' + rounds) +
+        (missiles != 'n' ? '' : ' no mis');
 };
 SGPvPActionWin.prototype.updateSetKeyPanelArgs =
-    function(threshold, rounds, missiles) {
+    function(threshold, rounds, missiles, stopEngage) {
     var e = this.elements;
     e.skarg_bots.style.display = 'none';
     e.skarg_alwaysmax.style.display = null; // default to block
     e.setkey_alwaysmax.checked = (threshold == 'm');
+    e.skarg_stopengage.style.display = null;
+    e.setkey_stopengage.checked = stopEngage == 't';
     e.skarg_rounds.style.display = null; // default to block
     e.setkey_rounds.value = (rounds || 20);
     e.skarg_missiles.style.display = null; // default to block
@@ -145,7 +153,8 @@ SGPvPActionWin.prototype.getArgsFromUI = function() {
     if ( rounds )
         return [ e.setkey_alwaysmax.checked ? 'm' : 'l',
                  rounds,
-                 e.setkey_missiles.checked ? 'm' : 'n' ];
+                 e.setkey_missiles.checked ? 'm' : 'n',
+                 e.setkey_stopengage.checked ? 't' : 'f' ];
     return null;
 };
 
@@ -165,6 +174,7 @@ SGPvPActionWinB.prototype.updateSetKeyPanelArgs =
     function(threshold, missiles) {
     var e = this.elements;
     e.skarg_bots.style.display = 'none';
+    e.skarg_stopengage.style.display = 'none';
     e.skarg_rounds.style.display = 'none';
     e.skarg_alwaysmax.style.display = null; // default to block
     e.setkey_alwaysmax.checked = (threshold == 'm');
@@ -196,6 +206,7 @@ SGPvPActionA.prototype.displayName = function(threshold) {
 SGPvPActionA.prototype.updateSetKeyPanelArgs = function(threshold) {
     var e = this.elements;
     e.skarg_bots.style.display = 'none';
+    e.skarg_stopengage.style.display = 'none';
     e.skarg_rounds.style.display = 'none';
     e.skarg_missiles.style.display = 'none';
     e.skarg_alwaysmax.style.display = 'null'; // default to block
@@ -269,11 +280,13 @@ SGPvPUI.prototype.UI_ELEMENT_IDS =
       'sg-setkey-done',
       'sg-setkey-key',
       'sg-setkey-missiles',
+      'sg-setkey-stopengage',
       'sg-setkey-rounds',
       'sg-setkey-select',
       'sg-skarg-alwaysmax',
       'sg-skarg-bots',
       'sg-skarg-missiles',
+      'sg-skarg-stopengage',
       'sg-skarg-rounds',
       'sg-targeting',
       'sg-version' ];
@@ -373,6 +386,7 @@ SGPvPUI.prototype.configure = function() {
     e.setkey_done.addEventListener('click', onS2KeysClick, false);
     e.setkey_select.addEventListener('change', onSetKeySelectChange, false);
     e.setkey_bots.addEventListener('input', onSetKeyArgInput, false);
+    e.setkey_stopengage.addEventListener('click', onSetKeyArgInput, false);
     e.setkey_rounds.addEventListener('input', onSetKeyArgInput, false);
     e.setkey_alwaysmax.addEventListener('click', onSetKeyArgInput, false);
     e.setkey_missiles.addEventListener('click', onSetKeyArgInput, false);
@@ -643,6 +657,13 @@ SGPvPUI.prototype.setKeyLegend = function(key, legend) {
             key.appendChild(legenddiv);
         }
         legenddiv.textContent = legend;
+
+        // Resize text based on legend length
+        if (legend.length < 30) {
+            legenddiv.style.fontSize = null; // Default is 9px
+        } else {
+            legenddiv.style.fontSize = '7px';
+        }
     }
     else {
         var legenddiv = key.firstElementChild;
